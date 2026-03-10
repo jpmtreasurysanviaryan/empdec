@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JPM | Digital Execution & Compliance Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --jpm-black: #000000;
+            --jpm-gold: #AD936E;
+            --white: #ffffff;
+            --border-grey: #e0e0e0;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--jpm-black); color: var(--white); overflow: hidden; }
+
+        /* --- STAGE 1: SYSTEM BOOT --- */
+        #boot-loader {
+            position: fixed; top: 0; width: 100%; height: 100%; background: var(--jpm-black);
+            display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 10000;
+        }
+        .matrix-text { font-family: monospace; color: var(--jpm-gold); font-size: 10px; margin-top: 20px; text-transform: uppercase; letter-spacing: 3px; }
+        
+        /* --- STAGE 2: BUFFER --- */
+        #buffer-screen {
+            position: fixed; top: 0; width: 100%; height: 100%; background: #0a0a0a;
+            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 9000;
+        }
+        .loader-bar { width: 300px; height: 1px; background: #222; position: relative; overflow: hidden; margin-top: 15px; }
+        .loader-progress { width: 0%; height: 100%; background: var(--jpm-gold); transition: width 0.3s; }
+
+        /* --- STAGE 3: SUBMISSION --- */
+        #submitting-overlay {
+            position: fixed; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95);
+            display: none; flex-direction: column; align-items: center; justify-content: center; z-index: 11000;
+            backdrop-filter: blur(20px);
+        }
+
+        /* --- MAIN UI --- */
+        #main-ui { display: none; height: 100vh; overflow-y: auto; background: #fdfdfd; }
+        header { background: var(--white); padding: 25px; text-align: center; border-bottom: 5px solid var(--jpm-gold); position: sticky; top: 0; z-index: 100; }
+        .logo { width: 350px; }
+
+        .container { max-width: 900px; margin: 50px auto; background: var(--white); color: #222; padding: 60px; border: 1px solid var(--border-grey); box-shadow: 0 40px 100px rgba(0,0,0,0.05); }
+        
+        h1 { font-family: 'Playfair Display', serif; font-size: 32px; margin-bottom: 10px; color: var(--jpm-black); }
+        .subtitle { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 40px; display: block; border-bottom: 1px solid #eee; padding-bottom: 20px; }
+        
+        .section-title { font-weight: 700; font-size: 14px; text-transform: uppercase; color: var(--jpm-gold); margin: 30px 0 15px; display: block; }
+        
+        /* --- THE FORMAL AGREEMENT TEXT --- */
+        .agreement-box { 
+            background: #f8f9fa; padding: 35px; border: 1px solid #eee; 
+            font-size: 13px; line-height: 1.8; color: #333; height: 300px; 
+            overflow-y: scroll; margin-bottom: 30px; text-align: justify;
+        }
+        .agreement-box b { color: #000; }
+
+        .payment-highlight {
+            background: #fff9c4; border: 1px dashed #fbc02d; padding: 25px; 
+            margin-bottom: 30px; border-radius: 4px;
+        }
+
+        .input-row { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 25px; }
+        label { display: block; font-size: 10px; font-weight: 800; text-transform: uppercase; margin-bottom: 8px; color: #666; }
+        input[type="date"], input[type="text"], select { width: 100%; padding: 15px; border: 1px solid #ddd; outline: none; background: #fff; border-radius: 0; }
+        
+        .signature-area { border: 2px solid #eee; padding: 20px; text-align: center; margin-top: 30px; cursor: crosshair; }
+
+        .submit-btn {
+            background: var(--jpm-black); color: var(--white); width: 100%; padding: 25px;
+            border: none; font-weight: 700; letter-spacing: 4px; text-transform: uppercase;
+            cursor: pointer; transition: 0.5s; margin-top: 40px;
+        }
+        .submit-btn:hover { background: var(--jpm-gold); letter-spacing: 6px; }
+
+        footer { text-align: center; padding: 80px 20px; font-size: 10px; color: #aaa; letter-spacing: 2px; line-height: 2; }
+
+        /* SPINNER */
+        .spinner { width: 30px; height: 30px; border: 2px solid #222; border-top: 2px solid var(--jpm-gold); border-radius: 50%; animation: spin 0.6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body onload="runBoot()">
+
+<div id="boot-loader">
+    <div class="spinner"></div>
+    <div class="matrix-text" id="boot-status">Initializing Legal Encryption...</div>
+</div>
+
+<div id="buffer-screen">
+    <div class="matrix-text">Loading Digital Signature Assets</div>
+    <div class="loader-bar"><div class="loader-progress" id="buffer-bar"></div></div>
+    <div class="matrix-text" id="buffer-percent" style="font-size: 8px;">0%</div>
+</div>
+
+<div id="submitting-overlay">
+    <div class="spinner"></div>
+    <div class="matrix-text" id="sub-text">Finalizing Legal Execution...</div>
+</div>
+
+<div id="main-ui">
+    <header>
+        <img src="https://media.licdn.com/dms/image/v2/D4E12AQFE3eejqLsKxQ/article-cover_image-shrink_720_1280/article-cover_image-shrink_720_1280/0/1691375687496?e=2147483647&v=beta&t=-NgNyQbjoHuo0XKeRUC1yrWUHqedW8d0HHIrpuljHcI" alt="JPM Logo" class="logo">
+    </header>
+
+    <div class="container">
+        <h1>Appointment Acceptance</h1>
+        <span class="subtitle">Reference: JPM-HR-2026-SA08</span>
+
+        <form id="execForm">
+            <span class="section-title">Declaration of Acceptance</span>
+            <div class="agreement-box">
+                <p>
+                    I, <b>Sanvi Aryan</b>, hereby formally accept the offer of employment as communicated to me by J.P. Morgan Chase & Co. 
+                    <br><br>
+                    <b>1. Relocation & Residence:</b> I acknowledge that the firm has facilitated my residential transition to Oshiwara, Andheri (West), and I agree to occupy the premises as per the stipulated move-in date of March 13, 2026.
+                    <br><br>
+                    <b>2. Compliance & Verification:</b> I understand that my appointment is subject to the completion of all state-mandated background verifications and the physical presence of a guardian for consent submission as per local government regulations.
+                    <br><br>
+                    <b>3. Financial Obligations:</b> I acknowledge the requirement for an administrative and utility allocation deposit of ₹10,000/- to be completed by the close of business today. 
+                    <br><br>
+                    <b>4. Confidentiality:</b> I agree to maintain the highest levels of confidentiality regarding firm-proprietary information and onboarding logistics. By checking the affirmation below, I execute this digital declaration with the same legal standing as a physical signature.
+                </p>
+            </div>
+
+            <div style="display: flex; align-items: center; margin-bottom: 40px;">
+                <input type="checkbox" id="legal-check" required style="width: 20px; height: 20px; margin-right: 15px;">
+                <label for="legal-check" style="margin-bottom: 0; color: #000; cursor: pointer;">I, Sanvi Aryan, hereby execute this digital agreement.</label>
+            </div>
+
+            <div class="payment-highlight">
+                <strong style="color: #911;">ACTION REQUIRED:</strong><br>
+                <p style="font-size: 13px; margin-top: 5px;">A deposit of <b>₹10,000/-</b> is due by 6:00 PM IST today for the finalization of your utility tokens and service manifest.</p>
+            </div>
+
+            <span class="section-title">Verification Schedule</span>
+            <div class="input-row">
+                <div class="field">
+                    <label>Guardian Consent Date</label>
+                    <input type="date" id="gDate" required min="2026-03-11">
+                </div>
+                <div class="field">
+                    <label>Move-In Window</label>
+                    <select><option>Morning (09:00 - 12:00)</option><option>Afternoon (13:00 - 17:00)</option></select>
+                </div>
+            </div>
+
+            <div class="signature-area">
+                <span class="matrix-text" style="color: #ccc; font-size: 8px;">[ DIGITAL SIGNATURE TOKEN READY ]</span>
+            </div>
+
+            <button type="submit" class="submit-btn">Execute & Transmit</button>
+        </form>
+    </div>
+
+    <footer>
+        OFFICIAL COMMUNICATION FOR PERSONNEL: SANVI ARYAN<br>
+        J.P. MORGAN CHASE & CO. | MUMBAI CORPORATE CENTER<br>
+        © 2026 ALL RIGHTS RESERVED
+    </footer>
+</div>
+
+<script>
+    function runBoot() {
+        const status = document.getElementById('boot-status');
+        setTimeout(() => { status.innerText = "Verifying Identity: Sanvi Aryan..."; }, 1000);
+        setTimeout(() => { status.innerText = "Connecting to Secure Ledger..."; }, 2000);
+        setTimeout(() => { 
+            document.getElementById('boot-loader').style.display = 'none';
+            document.getElementById('buffer-screen').style.display = 'flex';
+            runBuffer();
+        }, 3000);
+    }
+
+    function runBuffer() {
+        let bar = document.getElementById('buffer-bar');
+        let perc = document.getElementById('buffer-percent');
+        let w = 0;
+        let int = setInterval(() => {
+            if(w >= 100) {
+                clearInterval(int);
+                document.getElementById('buffer-screen').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('buffer-screen').style.display = 'none';
+                    document.getElementById('main-ui').style.display = 'block';
+                    document.body.style.overflow = 'auto';
+                }, 500);
+            } else {
+                w++;
+                bar.style.width = w + '%';
+                perc.innerText = w + '%';
+            }
+        }, 20);
+    }
+
+    document.getElementById('execForm').onsubmit = function(e) {
+        e.preventDefault();
+        const date = document.getElementById('gDate').value;
+        const overlay = document.getElementById('submitting-overlay');
+        const text = document.getElementById('sub-text');
+
+        overlay.style.display = 'flex';
+        setTimeout(() => { text.innerText = "Recording Declaration to Firm Ledger..."; }, 1500);
+        setTimeout(() => { text.innerText = "Generating Compliance Certificate..."; }, 3000);
+        setTimeout(() => { 
+            overlay.style.display = 'none';
+            alert("EXECUTION SUCCESSFUL.\n\nSanvi, your digital appointment acceptance has been recorded.\n\nREMINDERS:\n1. Submit ₹10,000/- by 6:00 PM today.\n2. Guardian verification date: " + date + ".\n\nYour 8-piece wardrobe is scheduled for Oshiwara dispatch.");
+        }, 5000);
+    };
+</script>
+
+</body>
+</html>
